@@ -1,0 +1,38 @@
+{ 
+	"name": "Apples-to-Assholes" ,
+	"preferGlobal": "false" ,
+	"version": "0.0.1",
+	"author": "Apples-to-Assholes <apples2assholes@doitfaggot.com>" ,
+	"description": "A online multiplayer NSFW version of the popular children's game Apples-to-Apples" ,
+	"contributors": [
+		{ "name": "Andrew Wong", "email": "th5418@gmail.com"} ,
+		{ "name": "Trevor Umeda", "email": "trevor.umeda@gmail.com" } ,
+		{ "name": "Thomas Chen" , "email": "foxnewsnetwork@gmail.com" }
+	] ,
+	"bin" : { "apples2assholes" : "./bin/apples2assholes" } ,
+	"scripts": { 
+		"start" : "cake start_server" ,
+		"test" : "cake test"
+	} ,
+	"main" : "./src/controllers/game.coffee" ,
+	"repository" : {
+		"type" : "git", 
+		"url" : "https://github.com/foxnewsnetwork/apples-to-assholes"
+	} ,
+	"keywords": ["apples", "assholes"] ,
+	"dependencies" : { 
+		"underscore": "*" ,
+		"backbone": "*" ,
+		"socket.io": "*"
+	} ,
+	"devDependencies" : {
+		"coffee-script": "*" ,
+		"uglify-js": "*" , 
+		"mocha": "*", 
+		"should": "*",
+		"chai": "*"
+	} ,
+	"engines": {
+		"node": ">=0.8"
+	}
+}
