@@ -8,6 +8,9 @@
 
 # The 4 socket io events are as below
 io.sockets.on "connection", (socket) ->
+	# Confirms connection
+	socket.emit("connection down", socket.id)
+	
 	# join room up happens when a player joins a room; all visitors need to join a room.
 	# once joined, the server needs to let everyone else in the room know a new player has joined
 	socket.on "join room up", (data) ->

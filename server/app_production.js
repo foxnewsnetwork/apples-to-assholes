@@ -260,6 +260,7 @@
 
 
   io.sockets.on("connection", function(socket) {
+    socket.emit("connection down", socket.id);
     socket.on("join room up", function(data) {
       var player, room;
       room = Rooms.retrieve(data['roomid']);
