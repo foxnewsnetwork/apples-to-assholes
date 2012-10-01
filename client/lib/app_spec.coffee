@@ -101,6 +101,7 @@ Backbone.sync = (method, model, options) ->
 
 
 class Card extends Backbone.Model
+	@count: 0
 	defaults:
 		category: null ,
 		content: null,
@@ -108,19 +109,25 @@ class Card extends Backbone.Model
 	# defaults
 	@random: (options) ->
 		options = {"category": "white"} unless options?
-		card = new Card("category": options["category"])
+		data = {"category": options["category"]}
 		switch options["category"]
 			when "white"
 				# Obviously, we need to load this from the server
-				card["content"] = "Old wrinkly Dick"
-				card["image"] = "http://upload.wikimedia.org/wikipedia/commons/thumb/8/88/46_Dick_Cheney_3x4.jpg/220px-46_Dick_Cheney_3x4.jpg"
+				data["content"] = "Old wrinkly Dick"
+				data["image"] = "http://upload.wikimedia.org/wikipedia/commons/thumb/8/88/46_Dick_Cheney_3x4.jpg/220px-46_Dick_Cheney_3x4.jpg"
 			when "black"
 				# Obviously, we need to load this from the server
-				card["content"] = "Trevor thinks of _____________ every night before going to bed."
+				data["content"] = "Trevor thinks of _____________ every night before going to bed."
 			else
 				throw "Nonexistant category error"
 		# switch
-	# random
+		return new Card(data)
+	, # random
+	initialize: ->
+		Card.count += 1
+		@view = new CardView({model: this})
+		@view.render()
+	# initialize
 # Card
 
 class Player extends Backbone.Model
@@ -172,6 +179,88 @@ class Rooms extends Backbone.Collection
 class Votes extends Backbone.Collection
 	model: Vote
 # Votes
+
+
+class CardView extends Backbone.View
+	tagName: "div", 
+	className: "card" ,
+	text: _.template( "<p class='card-contents'><%= content %></p>" ),
+	image: _.template( "<img src='<%= image %>' class='img-circle img-card' />" ),
+	container: $("body") ,
+	has_image: false ,
+	events:
+		"click": "interact" ,
+		"mouseenter": "swap2img", 
+		"mouseleave": "swap2txt"
+	, # events
+	render: ->
+		unless @model?
+			throw "Calling View Without a Model Error"
+			return this
+		@has_image = @model.has "image"
+		$(@el).append @text(@model.toJSON()) 
+		$(@el).attr "class", "card #{@model.get('category')}-card"
+		@container.append $(@el)
+		if @has_image
+			$(@el).append @image(@model.toJSON())
+			@$("img").hide()
+	, # render
+	interact: ->
+		# You should overwrite this as a callback
+		return false
+	, # interact
+	swap2txt: ->
+		if @has_image
+			@$("p").show()
+			@$("img").hide()
+		return false
+	, # swap2txt
+	swap2img: ->
+		if @has_image
+			@$("img").show()
+			@$("p").hide()
+		return false
+	, # swap2img
+# CardView
+
+class Flash extends Backbone.View
+	@container: ( ->
+		$("body").append("<ul id='flash-container' class='flash-container'></ul>")
+		return $("#flash-container")
+	)() , # staticInitializer
+	@show: (content, color) ->
+		data = { 
+			content: content ,
+			color: if color then color else "info"
+		} # data
+		(new Flash()).render(data)
+	, # static show
+	tagName: "li" ,
+	className: "alert alert-block" ,
+	events: 
+		"mouseover .alert": "diffusify" ,
+		"mouseleave .alert": "focusify"
+	, # events
+	render: (data) ->
+		$(@el).attr "class", "#{@className} alert-#{data['color']}" if data['color']?
+		$(@el).html( data['content'] )
+		Flash.container.append $(@el)
+		setTimeout( ( (dom) -> 
+			return ( -> 
+				dom.$(dom.el).hide(1000)
+				dom.remove() 
+			) # return
+		)(this), 5000 ) # setTimeout
+		return this
+	, # render
+	diffusify: (e) ->
+		$(@el).css "opacity", 0.5
+	, # diffusify
+	focusify: (e) ->
+		$(@el).css "opacity", 1
+	, # focusify
+# Flash
+
 
 
 # The game model drives the game and handles communication with the server
@@ -233,7 +322,18 @@ describe "Game Router", ->
 
 
 
-
+describe "Card Model", ->
+	describe "Sanity test", ->
+		it "should exist", ->
+			expect(Card).to.be.ok
+	# sanity test
+	describe "Card Count", ->
+		it "have some counts", (done) ->
+			setTimeout( ->
+				expect(Card.count > 0).to.equal true
+				done()
+			, 1950)
+# Card Model
 
 
 

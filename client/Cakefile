@@ -12,6 +12,8 @@ appFiles = [
 	"collections/players"  ,
 	"collections/rooms"  ,
 	"collections/votes",
+	"views/card" ,
+	"views/flash" ,
 	"routers/game" ,
 	"app"
 ]

@@ -1,0 +1,27 @@
+.card {
+	width: 120px;
+	height: 160px;
+	margin: 5px;
+	border-radius: 10px;
+	padding: 5px;
+	display: inline-table;
+	cursor: pointer;
+}
+.card p {
+	font-size: 0.85em;
+}
+.black-card {
+	background-color: #0f101c;
+	border: 1px solid #012;	
+	color: #efd;
+}
+.white-card {
+	background-color: #efeeed;
+	border: 1px solid #bac;	
+	color: #112;
+}
+.img-card {
+	width: 120px;
+	height: 120px;
+	margin-top: 20px;
+}

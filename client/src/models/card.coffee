@@ -1,4 +1,5 @@
 class Card extends Backbone.Model
+	@count: 0
 	defaults:
 		category: null ,
 		content: null,
@@ -6,17 +7,23 @@ class Card extends Backbone.Model
 	# defaults
 	@random: (options) ->
 		options = {"category": "white"} unless options?
-		card = new Card("category": options["category"])
+		data = {"category": options["category"]}
 		switch options["category"]
 			when "white"
 				# Obviously, we need to load this from the server
-				card["content"] = "Old wrinkly Dick"
-				card["image"] = "http://upload.wikimedia.org/wikipedia/commons/thumb/8/88/46_Dick_Cheney_3x4.jpg/220px-46_Dick_Cheney_3x4.jpg"
+				data["content"] = "Old wrinkly Dick"
+				data["image"] = "http://upload.wikimedia.org/wikipedia/commons/thumb/8/88/46_Dick_Cheney_3x4.jpg/220px-46_Dick_Cheney_3x4.jpg"
 			when "black"
 				# Obviously, we need to load this from the server
-				card["content"] = "Trevor thinks of _____________ every night before going to bed."
+				data["content"] = "Trevor thinks of _____ every night before going to bed."
 			else
 				throw "Nonexistant category error"
 		# switch
-	# random
+		return new Card(data)
+	, # random
+	initialize: ->
+		Card.count += 1
+		@view = new CardView({model: this})
+		@view.render()
+	# initialize
 # Card
