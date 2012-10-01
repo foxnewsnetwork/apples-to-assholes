@@ -1,30 +1,30 @@
-
 class CardView extends Backbone.View
 	tagName: "div", 
 	className: "card" ,
 	text: _.template( "<p class='card-contents'><%= content %></p>" ),
 	image: _.template( "<img src='<%= image %>' class='img-circle img-card' />" ),
-	container: $("body") ,
+	parent: $("body") ,
 	has_image: false ,
 	events:
 		"click": "interact" ,
 		"mouseenter": "swap2img", 
 		"mouseleave": "swap2txt"
 	, # events
-	render: ->
+	render: (container)->
 		unless @model?
 			throw "Calling View Without a Model Error"
 			return this
+		@parent = container if container?
 		@has_image = @model.has "image"
 		$(@el).append @text(@model.toJSON()) 
 		$(@el).attr "class", "card #{@model.get('category')}-card"
-		@container.append $(@el)
+		@parent.append $(@el)
 		if @has_image
 			$(@el).append @image(@model.toJSON())
 			@$("img").hide()
 	, # render
 	interact: ->
-		# You should overwrite this as a callback
+		Backbone.Events.trigger "card:white", @model
 		return false
 	, # interact
 	swap2txt: ->

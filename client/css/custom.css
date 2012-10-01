@@ -1,7 +1,22 @@
+.room {
+	position: absolute;
+	height: 100%;
+	margin-right: 160px;
+	left: 0;
+	top: 0;
+}
+.player {
+	right: 0;
+	top: 0;
+	position: absolute;
+	width: 155px;
+	height: 100%;
+	overflow-y: scroll;
+}
 .card {
 	width: 120px;
 	height: 160px;
-	margin: 5px;
+	margin: 1px;
 	border-radius: 10px;
 	padding: 5px;
 	display: inline-table;

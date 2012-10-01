@@ -19,11 +19,12 @@ class Card extends Backbone.Model
 			else
 				throw "Nonexistant category error"
 		# switch
-		return new Card(data)
+		return new Card(data, options)
 	, # random
 	initialize: ->
 		Card.count += 1
 		@view = new CardView({model: this})
-		@view.render()
-	# initialize
+	, # initialize
+	render: (container) ->
+		@view.render container
 # Card

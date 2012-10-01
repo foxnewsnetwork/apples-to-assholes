@@ -1,6 +1,6 @@
 MODELS=card player room vote
 COLLECTIONS=cards players rooms votes
-VIEWS=card flash
+VIEWS=card player flash room
 ROUTERS=game
 MISC=sync
 
@@ -19,8 +19,8 @@ TDEPS= $(patsubst %, $(TDIR)/models/%$(TEXT).$(EXT), $(MODELS)) $(patsubst %, $(
 production: $(ODIR)/app.js
 	cat $< | uglifyjs -o app.min.js
 
-development: $(ODIR)/app.js
-	"This is just an alias for app.js"
+development: $(ODIR)/app_production.js
+	@echo "This is just an alias for app_production.js"
 
 test: $(ODIR)/app_spec.js
 	@echo "=== Open test.html in your favorite browser to run tests! ==="
@@ -28,7 +28,7 @@ test: $(ODIR)/app_spec.js
 $(ODIR)/%.js: $(ODIR)/%.coffee
 	coffee -co lib/ lib/
 
-$(ODIR)/app.coffee: $(DEPS)
+$(ODIR)/app_production.coffee: $(DEPS)
 	cake build
 
 $(ODIR)/app_spec.coffee: $(DEPS) $(TDEPS)

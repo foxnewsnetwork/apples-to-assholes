@@ -142,9 +142,12 @@ class Player extends Backbone.Model
 
 class Room extends Backbone.Model
 	initialize: ->
+		@view = new RoomView(model: this)
+		@view.render()
 		Backbone.Events.on "game:start", =>
 			Flash.show "game:start event received"
 			@black = Card.random({"category": "black"})
+			@black.render($(@view.el))
 			@whites = new Cards()
 			@player = new Player() # you
 			@white_timer = null
@@ -216,7 +219,7 @@ class CardView extends Backbone.View
 			@$("img").hide()
 	, # render
 	interact: ->
-		# You should overwrite this as a callback
+		Backbone.Events.trigger "card:white", @model
 		return false
 	, # interact
 	swap2txt: ->
@@ -282,6 +285,15 @@ class PlayerView extends Backbone.View
 	, # render
 # PlayerView
 
+class RoomView extends Backbone.View
+	tagName: "div", 
+	className: "room" ,
+	parent: $("body") ,
+	render: ->
+		@parent.append $(@el)
+	# render
+# RoomView
+
 
 # The game model drives the game and handles communication with the server
 # It fires all 4 events detailed in the game.coffee controller, and receives the following 4
@@ -301,68 +313,3 @@ class Game extends Backbone.Router
 # Initialization
 socket = io.connect "http://localhost:3123"
 apples_to_assholes = new Game socket
-
-
-mocha.setup "bdd"
-$("document").ready ->
-	mocha.globals(['apples_to_assholes']).run()
-# document ready
-
-describe "Game Router", ->
-	describe "Sanity Test", ->
-		it "should have that thing", ->
-			expect(Game).to.be.ok
-		it "Should at least exist", ->
-			expect(apples_to_assholes).to.be.ok
-		it "Should have the proper globals", ->
-			expect(io).to.be.ok
-		it "should have socket enabled", ->
-			expect(socket).to.be.ok
-	# Sanity Test
-
-	describe "Actual Operation", ->
-		it "should properly be in a room", (done) ->
-			setTimeout( => 
-				expect(apples_to_assholes.room).to.be.ok
-				done()
-			, 1950)
-		it "should have a hand", (done) ->
-			setTimeout( => 
-				expect(apples_to_assholes.room.player.cards.length).to.equal 10
-				done()
-			, 1950)
-	# Actual Operation
-# Game
-
-
-
-
-
-
-
-
-
-describe "Card Model", ->
-	describe "Sanity test", ->
-		it "should exist", ->
-			expect(Card).to.be.ok
-	# sanity test
-	describe "Card Count", ->
-		it "have some counts", (done) ->
-			setTimeout( ->
-				expect(Card.count > 0).to.equal true
-				done()
-			, 1950)
-# Card Model
-
-
-
-describe "Room Model", ->
-	describe "Sanity test", ->
-		it "should exist", ->
-			expect(Room).to.be.ok
-	# Sanity Test
-# Room Model
-
-
-

@@ -7,5 +7,10 @@ class Cards extends Backbone.Collection
 			card = Card.random(options)
 			cards.add card
 		return cards
-	# @random
+	, # @random
+	render: (container)->
+		@forEach (card) -> 
+			card.render(container)
+		# forEach
+	# render
 # Cards
