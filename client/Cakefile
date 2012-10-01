@@ -4,14 +4,31 @@ fs = require 'fs'
 # Yes, app MUST come last
 appFiles = [
 	"misc/sync" ,
-	"models/game" ,
+	"models/card" ,
+	"models/player" ,
+	"models/room" ,
+	"models/vote" ,
+	"collections/cards"  ,
+	"collections/players"  ,
+	"collections/rooms"  ,
+	"collections/votes",
+	"routers/game" ,
 	"app"
 ]
 
 # In test, app must come first
 testFiles = [
 	"app" ,
-	"models/game"
+	"routers/game" ,
+	"collections/cards"  ,
+	"collections/players"  ,
+	"collections/rooms"  ,
+	"collections/votes",
+	"models/card" ,
+	"models/player" ,
+	"models/room" ,
+	"models/vote" ,
+	"misc/sync"
 ]
 
 outputDir = "lib"

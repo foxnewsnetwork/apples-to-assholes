@@ -100,16 +100,91 @@ Backbone.sync = (method, model, options) ->
 # Backbone.sync
 
 
+class Card extends Backbone.Model
+	defaults:
+		category: null ,
+		content: null,
+		image: null
+	# defaults
+	@random: (options) ->
+		options = {"category": "white"} unless options?
+		card = new Card("category": options["category"])
+		switch options["category"]
+			when "white"
+				# Obviously, we need to load this from the server
+				card["content"] = "Old wrinkly Dick"
+				card["image"] = "http://upload.wikimedia.org/wikipedia/commons/thumb/8/88/46_Dick_Cheney_3x4.jpg/220px-46_Dick_Cheney_3x4.jpg"
+			when "black"
+				# Obviously, we need to load this from the server
+				card["content"] = "Trevor thinks of _____________ every night before going to bed."
+			else
+				throw "Nonexistant category error"
+		# switch
+	# random
+# Card
+
+class Player extends Backbone.Model
+	initialize: (cards)->
+		@cards = Cards.random({"category": "white", "limit": 10})
+	# initialize
+# Player
+
+class Room extends Backbone.Model
+	initialize: ->
+		Backbone.Events.on "game:start", =>
+			@black = Card.random({"category": "black"})
+			@whites = new Cards()
+			@player = new Player() # you
+			@white_timer = null
+		Backbone.Events.on "card:white", (card) =>
+			@whites.add card
+			unless @white_timer?
+				@white_timer = setTimeout(=>
+					Backbone.Events.trigger "game:start"
+				, 15000)
+	, # initialize
+# Room
+
+class Vote extends Backbone.Model
+# Vote
+
+class Cards extends Backbone.Collection
+	model: Card
+	@random: (options) ->
+		options = { category: "white", limit: 1 } unless options?
+		cards = new Cards()
+		for k in [1..options["limit"]]
+			card = Card.random(options)
+			cards.add card
+		return cards
+	# @random
+# Cards
+
+class Players extends Backbone.Collection
+	model: Player
+# Players
+
+# I guess we don't really use on the client side
+class Rooms extends Backbone.Collection
+	model: Room
+# Rooms
+
+class Votes extends Backbone.Collection
+	model: Vote
+# Votes
+
 
 # The game model drives the game and handles communication with the server
 # It fires all 4 events detailed in the game.coffee controller, and receives the following 4
-class Game extends Backbone.Model
+# socket only lives in here, backbone events fire everywhere though
+class Game extends Backbone.Router
+	routes: {
+		":name": "room_switch"
+	} , # routes	
+	# routes are actually game states
 	initialize: (@socket) ->
-		# Step 1: setup connection with the server
-		@socket.on "connection down", (socketid) ->
-			@socketid = socketid
-			# Step 2: Do other stuff
-		# connection down
+		@room = new Room()
+		Backbone.Events.trigger "game:start"
 	, # initialize
 # Game
 
@@ -124,7 +199,7 @@ $("document").ready ->
 	mocha.globals(['apples_to_assholes']).run()
 # document ready
 
-describe "Game", ->
+describe "Game Router", ->
 	describe "Sanity Test", ->
 		it "should have that thing", ->
 			expect(Game).to.be.ok
@@ -135,11 +210,39 @@ describe "Game", ->
 		it "should have socket enabled", ->
 			expect(socket).to.be.ok
 	# Sanity Test
+
 	describe "Actual Operation", ->
-		it "should have a proper id", (done)->
-			setTimeout( =>
-				expect(apples_to_assholes.socketid).to.equal(socket.id)
+		it "should properly be in a room", (done) ->
+			setTimeout( => 
+				expect(apples_to_assholes.room).to.be.ok
 				done()
-			, 1950) # timeout
+			, 1950)
+		it "should have a hand", (done) ->
+			setTimeout( => 
+				expect(apples_to_assholes.room.player.cards.length).to.equal 10
+				done()
+			, 1950)
 	# Actual Operation
 # Game
+
+
+
+
+
+
+
+
+
+
+
+
+
+describe "Room Model", ->
+	describe "Sanity test", ->
+		it "should exist", ->
+			expect(Room).to.be.ok
+	# Sanity Test
+# Room Model
+
+
+

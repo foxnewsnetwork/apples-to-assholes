@@ -9,3 +9,10 @@ Models : contains all the models that will require database communication and st
 Routers : backbone routers route stuff around
 Views : renders cards and exposes UIs
 Misc : contains the sync files and other such miscellanious additions
+
+Events
+=
+This thing is event driven. Event options determine how far they travel. The options they take are as follows:
+	range: "client" / "server"
+	echo: callback / target / "global" / "galatic"
+	data: your json

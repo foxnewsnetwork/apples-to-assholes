@@ -1,5 +1,6 @@
-MODELS=game card 
-COLLECTIONS=rooms
+MODELS=card player room vote
+COLLECTIONS=cards players rooms votes
+ROUTERS=game
 MISC=sync
 
 TEXT=_spec
@@ -9,8 +10,8 @@ TDIR=spec
 ODIR=lib
 DIR=src
  
-DEPS= $(patsubst %, $(DIR)/models/%.$(EXT), $(MODELS)) $(patsubst %, $(DIR)/collections/%.$(EXT), $(COLLECTIONS)) $(patsubst %, $(DIR)/misc/%.$(EXT), $(MISC))
-TDEPS= $(patsubst %, $(TDIR)/models/%$(TEXT).$(EXT), $(MODELS)) $(patsubst %, $(TDIR)/collections/%$(TEXT).$(EXT), $(COLLECTIONS)) $(patsubst %, $(TDIR)/misc/%$(TEXT).$(EXT), $(MISC))
+DEPS= $(patsubst %, $(DIR)/models/%.$(EXT), $(MODELS)) $(patsubst %, $(DIR)/collections/%.$(EXT), $(COLLECTIONS)) $(patsubst %, $(DIR)/routers/%.$(EXT), $(ROUTERS)) $(patsubst %, $(DIR)/misc/%.$(EXT), $(MISC))
+TDEPS= $(patsubst %, $(TDIR)/models/%$(TEXT).$(EXT), $(MODELS)) $(patsubst %, $(TDIR)/collections/%$(TEXT).$(EXT), $(COLLECTIONS)) $(patsubst %, $(TDIR)/routers/%$(TEXT).$(EXT), $(ROUTERS)) $(patsubst %, $(TDIR)/misc/%$(TEXT).$(EXT), $(MISC))
 
 .PHONY: development production test
 
