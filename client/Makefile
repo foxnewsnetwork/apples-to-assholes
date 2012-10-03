@@ -1,6 +1,6 @@
 MODELS=card player room vote
 COLLECTIONS=cards players rooms votes
-VIEWS=card player flash room
+VIEWS=card player flash room timer
 ROUTERS=game
 MISC=sync
 

@@ -1,3 +1,10 @@
+.count-down-timer {
+	position: absolute;
+	bottom: 0;
+	left: 0;
+	width: 100px;
+	height: 45px;
+}
 .room {
 	position: absolute;
 	height: 100%;

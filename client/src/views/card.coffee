@@ -1,4 +1,5 @@
 class CardView extends Backbone.View
+	@first_click: true ,
 	tagName: "div", 
 	className: "card" ,
 	text: _.template( "<p class='card-contents'><%= content %></p>" ),
@@ -22,9 +23,12 @@ class CardView extends Backbone.View
 		if @has_image
 			$(@el).append @image(@model.toJSON())
 			@$("img").hide()
+		return false
 	, # render
 	interact: ->
-		Backbone.Events.trigger "card:white", @model
+		if CardView.first_click
+			Backbone.Events.trigger( "card:white", @model ) unless @model.in_play
+			CardView.first_click = false
 		return false
 	, # interact
 	swap2txt: ->
@@ -39,4 +43,8 @@ class CardView extends Backbone.View
 			@$("p").hide()
 		return false
 	, # swap2img
+	remove: ->
+		$(@el).hide()
+		$(@el).remove()
+	, # remove
 # CardView

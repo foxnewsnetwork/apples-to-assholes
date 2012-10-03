@@ -1,5 +1,6 @@
 class Card extends Backbone.Model
-	@count: 0
+	@count: 0 ,
+	in_play: false ,
 	defaults:
 		category: null ,
 		content: null,
@@ -23,8 +24,18 @@ class Card extends Backbone.Model
 	, # random
 	initialize: ->
 		Card.count += 1
-		@view = new CardView({model: this})
+		@view = new CardView({"model": this})
 	, # initialize
+	move_to: (target) ->
+		@view.remove()
+		@view = new CardView({"model":this})
+		@view.render target
+	, # move_in
 	render: (container) ->
 		@view.render container
+	, # render
+	remove: ->
+		@view.remove()
+		@destroy({silent: true})
+	, # remove
 # Card

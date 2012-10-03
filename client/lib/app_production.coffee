@@ -101,7 +101,8 @@ Backbone.sync = (method, model, options) ->
 
 
 class Card extends Backbone.Model
-	@count: 0
+	@count: 0 ,
+	in_play: false ,
 	defaults:
 		category: null ,
 		content: null,
@@ -125,22 +126,49 @@ class Card extends Backbone.Model
 	, # random
 	initialize: ->
 		Card.count += 1
-		@view = new CardView({model: this})
+		@view = new CardView({"model": this})
 	, # initialize
+	move_to: (target) ->
+		@view.remove()
+		@view = new CardView({"model":this})
+		@view.render target
+	, # move_in
 	render: (container) ->
 		@view.render container
+	, # render
+	remove: ->
+		@view.remove()
+		@destroy({silent: true})
+	, # remove
 # Card
 
 class Player extends Backbone.Model
 	initialize: (cards)->
 		@view = new PlayerView(model: this)
+		CardView.first_click = true
 		@view.render()
 		@cards = Cards.random({"category": "white", "limit": 10})
 		@cards.render(@view.container)
-	# initialize
+	, # initialize
+	post_game_clean_up: ->
+		if @cards?
+			while @cards.length > 0
+				@cards.pop().remove()
+	, # post_game_clean_up
 # Player
 
 class Room extends Backbone.Model
+	@white_time: 15000 ,
+	state: "pre-game" ,
+	post_game_clean_up: ->
+		Flash.show "Cleaning after the game"
+		@black.remove() if @black?
+		if @whites?
+			while @whites.length > 0
+				@whites.pop().remove()
+		if @player?
+			@player.post_game_clean_up()
+	, # post_game_clean_up
 	initialize: ->
 		@view = new RoomView(model: this)
 		@view.render()
@@ -151,12 +179,24 @@ class Room extends Backbone.Model
 			@whites = new Cards()
 			@player = new Player() # you
 			@white_timer = null
+			@state = "black-card"
 		Backbone.Events.on "card:white", (card) =>
-			@whites.add card
-			unless @white_timer?
-				@white_timer = setTimeout(=>
-					Backbone.Events.trigger "game:start"
-				, 15000)
+			switch @state
+				when "black-card"
+					unless @white_timer?
+						@white_timer = Timer.setTimeout(=>
+							@post_game_clean_up()
+							Backbone.Events.trigger "game:start"
+						, Room.white_time)
+						@state = "white-card"
+					@whites.add card
+					card.move_to($(@view.el))
+					card.in_play = true
+				when "white-card"
+					@whites.add card
+					card.move_to($(@view.el))
+					card.in_play = true
+			# switch
 	, # initialize
 # Room
 
@@ -194,6 +234,7 @@ class Votes extends Backbone.Collection
 # Votes
 
 class CardView extends Backbone.View
+	@first_click: true ,
 	tagName: "div", 
 	className: "card" ,
 	text: _.template( "<p class='card-contents'><%= content %></p>" ),
@@ -217,9 +258,12 @@ class CardView extends Backbone.View
 		if @has_image
 			$(@el).append @image(@model.toJSON())
 			@$("img").hide()
+		return false
 	, # render
 	interact: ->
-		Backbone.Events.trigger "card:white", @model
+		if CardView.first_click
+			Backbone.Events.trigger( "card:white", @model ) unless @model.in_play
+			CardView.first_click = false
 		return false
 	, # interact
 	swap2txt: ->
@@ -234,6 +278,10 @@ class CardView extends Backbone.View
 			@$("p").hide()
 		return false
 	, # swap2img
+	remove: ->
+		$(@el).hide()
+		$(@el).remove()
+	, # remove
 # CardView
 
 class Flash extends Backbone.View
@@ -275,6 +323,32 @@ class Flash extends Backbone.View
 # Flash
 
 
+class Timer extends Backbone.View
+	@setTimeout: (callback, time) ->
+		setTimeout callback, time
+		timer = new Timer()
+		timer.render time
+		return timer
+	, # setTimeout
+	tagName: "div", 
+	className: "count-down-timer" ,
+	timeLeft: null ,
+	parent: $("body") ,
+	render: (time) ->
+		$(@el).html(time / 1000).appendTo @parent
+		@timeLeft = time
+		@countdown = setInterval( => 
+			if @timeLeft > 0
+				@timeLeft -= 1000
+				$(@el).html(@timeLeft / 1000)
+			else
+				clearInterval @countdown
+				$(@el).hide()
+				$(@el).remove()
+		, 1000 )
+	# render
+# Timer
+
 class PlayerView extends Backbone.View
 	tagName: "div", 
 	className: "player" ,
@@ -300,13 +374,17 @@ class RoomView extends Backbone.View
 # socket only lives in here, backbone events fire everywhere though
 class Game extends Backbone.Router
 	routes: {
-		":name": "room_switch"
+		"room": "room_switch"
 	} , # routes	
 	# routes are actually game states
 	initialize: (@socket) ->
 		@room = new Room()
 		Backbone.Events.trigger "game:start"
 	, # initialize
+	room_switch: (name) ->
+		Flash.show "Switched to room #{name}", "success"
+		$("title").html "Faggot"
+	# room_switch
 # Game
 
 

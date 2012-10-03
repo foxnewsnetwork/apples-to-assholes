@@ -4,11 +4,14 @@
 # socket only lives in here, backbone events fire everywhere though
 class Game extends Backbone.Router
 	routes: {
-		":name": "room_switch"
+		"room": "room_switch"
 	} , # routes	
 	# routes are actually game states
 	initialize: (@socket) ->
 		@room = new Room()
 		Backbone.Events.trigger "game:start"
 	, # initialize
+	room_switch: (name) ->
+		Flash.show "Switched to room #{name}", "success"
+	# room_switch
 # Game
