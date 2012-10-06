@@ -1,3 +1,9 @@
+.vote-counter {
+	position: absolute;
+	bottom: 0;
+	left: 125px;
+	height: 45px;
+}
 .count-down-timer {
 	position: absolute;
 	bottom: 0;

@@ -3,7 +3,6 @@ fs = require 'fs'
 
 # Yes, app MUST come last
 appFiles = [
-	"misc/sync" ,
 	"models/card" ,
 	"models/player" ,
 	"models/room" ,
@@ -18,7 +17,9 @@ appFiles = [
 	"views/player" ,
 	"views/room" ,
 	"routers/game" ,
-	"app"
+	"app" ,
+	"misc/sync" ,
+	"misc/cannon" ,
 ]
 
 # In test, app must come first

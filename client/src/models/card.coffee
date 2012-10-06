@@ -4,7 +4,8 @@ class Card extends Backbone.Model
 	defaults:
 		category: null ,
 		content: null,
-		image: null
+		image: null,
+		socketid: null,
 	# defaults
 	@random: (options) ->
 		options = {"category": "white"} unless options?

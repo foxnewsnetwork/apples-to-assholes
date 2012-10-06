@@ -2,7 +2,7 @@ MODELS=card player room vote
 COLLECTIONS=cards players rooms votes
 VIEWS=card player flash room timer
 ROUTERS=game
-MISC=sync
+MISC=sync cannon
 
 TEXT=_spec
 EXT=coffee

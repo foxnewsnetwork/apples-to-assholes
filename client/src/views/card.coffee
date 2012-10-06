@@ -1,5 +1,6 @@
 class CardView extends Backbone.View
 	@first_click: true ,
+	@first_vote: true ,
 	tagName: "div", 
 	className: "card" ,
 	text: _.template( "<p class='card-contents'><%= content %></p>" ),
@@ -29,6 +30,9 @@ class CardView extends Backbone.View
 		if CardView.first_click
 			Backbone.Events.trigger( "card:white", @model ) unless @model.in_play
 			CardView.first_click = false
+		else if CardView.first_vote
+			Backbone.Events.trigger( "vote:create", @model ) if @model.in_play
+			CardView.first_vote = false
 		return false
 	, # interact
 	swap2txt: ->

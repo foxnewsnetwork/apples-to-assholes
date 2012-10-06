@@ -1,6 +1,7 @@
 class Room extends Backbone.Model
 	@white_time: 15000 ,
 	state: "pre-game" ,
+	score: 0 ,
 	post_game_clean_up: ->
 		Flash.show "Cleaning after the game"
 		@black.remove() if @black?
@@ -13,6 +14,9 @@ class Room extends Backbone.Model
 	initialize: ->
 		@view = new RoomView(model: this)
 		@view.render()
+		Backbone.Events.on "vote:win", =>
+			@score += 1
+			@view.update_score()
 		Backbone.Events.on "game:start", =>
 			Flash.show "game:start event received"
 			@black = Card.random({"category": "black"})

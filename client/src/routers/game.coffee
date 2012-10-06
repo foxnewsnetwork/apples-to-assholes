@@ -9,7 +9,11 @@ class Game extends Backbone.Router
 	# routes are actually game states
 	initialize: (@socket) ->
 		@room = new Room()
+		alert @socket.id
 		Backbone.Events.trigger "game:start"
+		Backbone.Events.on "card:white", (card) =>
+			if @socket.id is card.get "socketid"
+				@socket.emit "white card up", card
 	, # initialize
 	room_switch: (name) ->
 		Flash.show "Switched to room #{name}", "success"

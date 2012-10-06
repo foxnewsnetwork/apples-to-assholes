@@ -1,3 +1,327 @@
+class Card extends Backbone.Model
+	@count: 0 ,
+	in_play: false ,
+	defaults:
+		category: null ,
+		content: null,
+		image: null,
+		socketid: null,
+	# defaults
+	@random: (options) ->
+		options = {"category": "white"} unless options?
+		data = {"category": options["category"]}
+		switch options["category"]
+			when "white"
+				# Obviously, we need to load this from the server
+				data["content"] = "Old wrinkly Dick"
+				data["image"] = "http://upload.wikimedia.org/wikipedia/commons/thumb/8/88/46_Dick_Cheney_3x4.jpg/220px-46_Dick_Cheney_3x4.jpg"
+			when "black"
+				# Obviously, we need to load this from the server
+				data["content"] = "Trevor thinks of _____ every night before going to bed."
+			else
+				throw "Nonexistant category error"
+		# switch
+		return new Card(data, options)
+	, # random
+	initialize: ->
+		Card.count += 1
+		@view = new CardView({"model": this})
+	, # initialize
+	move_to: (target) ->
+		@view.remove()
+		@view = new CardView({"model":this})
+		@view.render target
+	, # move_in
+	render: (container) ->
+		@view.render container
+	, # render
+	remove: ->
+		@view.remove()
+		@destroy({silent: true})
+	, # remove
+# Card
+
+class Player extends Backbone.Model
+	initialize: (cards)->
+		@view = new PlayerView(model: this)
+		CardView.first_click = true
+		CardView.first_vote = true
+		@view.render()
+		@cards = Cards.random({"category": "white", "limit": 10})
+		@cards.render(@view.container)
+	, # initialize
+	post_game_clean_up: ->
+		if @cards?
+			while @cards.length > 0
+				@cards.pop().remove()
+	, # post_game_clean_up
+# Player
+
+class Room extends Backbone.Model
+	@white_time: 15000 ,
+	state: "pre-game" ,
+	score: 0 ,
+	post_game_clean_up: ->
+		Flash.show "Cleaning after the game"
+		@black.remove() if @black?
+		if @whites?
+			while @whites.length > 0
+				@whites.pop().remove()
+		if @player?
+			@player.post_game_clean_up()
+	, # post_game_clean_up
+	initialize: ->
+		@view = new RoomView(model: this)
+		@view.render()
+		Backbone.Events.on "vote:win", =>
+			@score += 1
+			@view.update_score()
+		Backbone.Events.on "game:start", =>
+			Flash.show "game:start event received"
+			@black = Card.random({"category": "black"})
+			@black.render($(@view.el))
+			@whites = new Cards()
+			@player = new Player() # you
+			@white_timer = null
+			@state = "black-card"
+		Backbone.Events.on "card:white", (card) =>
+			switch @state
+				when "black-card"
+					unless @white_timer?
+						@white_timer = Timer.setTimeout(=>
+							@post_game_clean_up()
+							Backbone.Events.trigger "game:start"
+						, Room.white_time)
+						@state = "white-card"
+					@whites.add card
+					card.move_to($(@view.el))
+					card.in_play = true
+				when "white-card"
+					@whites.add card
+					card.move_to($(@view.el))
+					card.in_play = true
+			# switch
+	, # initialize
+# Room
+
+class Vote extends Backbone.Model
+	defaults:
+		cardid: null
+	# defaults
+# Vote
+
+class Cards extends Backbone.Collection
+	model: Card
+	@random: (options) ->
+		options = { category: "white", limit: 1 } unless options?
+		cards = new Cards()
+		for k in [1..options["limit"]]
+			card = Card.random(options)
+			cards.add card
+		return cards
+	, # @random
+	render: (container)->
+		@forEach (card) -> 
+			card.render(container)
+		# forEach
+	# render
+# Cards
+
+class Players extends Backbone.Collection
+	model: Player
+# Players
+
+# I guess we don't really use on the client side
+class Rooms extends Backbone.Collection
+	model: Room
+# Rooms
+
+# We might not use this and the model class
+class Votes extends Backbone.Collection
+	model: Vote ,
+	remove: ->
+		count = @length
+		while @length > 0
+			@pop().destroy()
+		return count
+	# refresh
+# Votes
+
+class CardView extends Backbone.View
+	@first_click: true ,
+	@first_vote: true ,
+	tagName: "div", 
+	className: "card" ,
+	text: _.template( "<p class='card-contents'><%= content %></p>" ),
+	image: _.template( "<img src='<%= image %>' class='img-circle img-card' />" ),
+	parent: $("body") ,
+	has_image: false ,
+	events:
+		"click": "interact" ,
+		"mouseenter": "swap2img", 
+		"mouseleave": "swap2txt"
+	, # events
+	render: (container)->
+		unless @model?
+			throw "Calling View Without a Model Error"
+			return this
+		@parent = container if container?
+		@has_image = @model.has "image"
+		$(@el).append @text(@model.toJSON()) 
+		$(@el).attr "class", "card #{@model.get('category')}-card"
+		@parent.append $(@el)
+		if @has_image
+			$(@el).append @image(@model.toJSON())
+			@$("img").hide()
+		return false
+	, # render
+	interact: ->
+		if CardView.first_click
+			Backbone.Events.trigger( "card:white", @model ) unless @model.in_play
+			CardView.first_click = false
+		else if CardView.first_vote
+			Backbone.Events.trigger( "vote:create", @model ) if @model.in_play
+			CardView.first_vote = false
+		return false
+	, # interact
+	swap2txt: ->
+		if @has_image
+			@$("p").show()
+			@$("img").hide()
+		return false
+	, # swap2txt
+	swap2img: ->
+		if @has_image
+			@$("img").show()
+			@$("p").hide()
+		return false
+	, # swap2img
+	remove: ->
+		$(@el).hide()
+		$(@el).remove()
+	, # remove
+# CardView
+
+class Flash extends Backbone.View
+	@container: ( ->
+		$("body").append("<ul id='flash-container' class='flash-container'></ul>")
+		return $("#flash-container")
+	)() , # staticInitializer
+	@show: (content, color) ->
+		data = { 
+			content: content ,
+			color: if color then color else "info"
+		} # data
+		(new Flash()).render(data)
+	, # static show
+	tagName: "li" ,
+	className: "alert alert-block" ,
+	events: 
+		"mouseover .alert": "diffusify" ,
+		"mouseleave .alert": "focusify"
+	, # events
+	render: (data) ->
+		$(@el).attr "class", "#{@className} alert-#{data['color']}" if data['color']?
+		$(@el).html( data['content'] )
+		Flash.container.append $(@el)
+		setTimeout( ( (dom) -> 
+			return ( -> 
+				dom.$(dom.el).hide(1000)
+				dom.remove() 
+			) # return
+		)(this), 5000 ) # setTimeout
+		return this
+	, # render
+	diffusify: (e) ->
+		$(@el).css "opacity", 0.5
+	, # diffusify
+	focusify: (e) ->
+		$(@el).css "opacity", 1
+	, # focusify
+# Flash
+
+
+class Timer extends Backbone.View
+	@setTimeout: (callback, time) ->
+		setTimeout callback, time
+		timer = new Timer()
+		timer.render time
+		return timer
+	, # setTimeout
+	tagName: "div", 
+	className: "count-down-timer" ,
+	timeLeft: null ,
+	parent: $("body") ,
+	render: (time) ->
+		$(@el).html(time / 1000).appendTo @parent
+		@timeLeft = time
+		@countdown = setInterval( => 
+			if @timeLeft > 0
+				@timeLeft -= 1000
+				$(@el).html(@timeLeft / 1000)
+			else
+				clearInterval @countdown
+				$(@el).hide()
+				$(@el).remove()
+		, 1000 )
+	# render
+# Timer
+
+class PlayerView extends Backbone.View
+	tagName: "div", 
+	className: "player" ,
+	parent: $("body") ,
+	render: ->
+		$(@el).append(@template).appendTo @parent
+		@container = $(@el)
+	, # render
+# PlayerView
+
+class RoomView extends Backbone.View
+	tagName: "div", 
+	className: "room" ,
+	parent: $("body") ,
+	render: ->
+		@parent.append "<div class='vote-counter'></div>"
+		@parent.append $(@el)
+		@update_score()
+	, # render
+	update_score: ->
+		$(".vote-counter").html(@model.score)
+	# update_score
+# RoomView
+
+
+# The game model drives the game and handles communication with the server
+# It fires all 4 events detailed in the game.coffee controller, and receives the following 4
+# socket only lives in here, backbone events fire everywhere though
+class Game extends Backbone.Router
+	routes: {
+		"room": "room_switch"
+	} , # routes	
+	# routes are actually game states
+	initialize: (@socket) ->
+		@room = new Room()
+		alert @socket.id
+		Backbone.Events.trigger "game:start"
+		Backbone.Events.on "card:white", (card) =>
+			if @socket.id is card.get "socketid"
+				@socket.emit "white card up", card
+	, # initialize
+	room_switch: (name) ->
+		Flash.show "Switched to room #{name}", "success"
+	# room_switch
+# Game
+
+
+# Initialization
+socket = io.connect "http://localhost:3123"
+socket.on "connection down", (socketid)->
+	socket.id = socketid
+	
+	apples_to_assholes = new Game socket
+
+
 # $.ajaxPrefilter (options, originalOptions, jqXHR) ->
 # 	options.xhrFields = { 	"withCredentials": true }
 # 	jqXHR.setRequestHeader( "X-CSRF-TOKEN", $("meta[name='csrf-token']").attr("content") )
@@ -100,294 +424,31 @@ Backbone.sync = (method, model, options) ->
 # Backbone.sync
 
 
-class Card extends Backbone.Model
-	@count: 0 ,
-	in_play: false ,
-	defaults:
-		category: null ,
-		content: null,
-		image: null
-	# defaults
-	@random: (options) ->
-		options = {"category": "white"} unless options?
-		data = {"category": options["category"]}
-		switch options["category"]
-			when "white"
-				# Obviously, we need to load this from the server
-				data["content"] = "Old wrinkly Dick"
-				data["image"] = "http://upload.wikimedia.org/wikipedia/commons/thumb/8/88/46_Dick_Cheney_3x4.jpg/220px-46_Dick_Cheney_3x4.jpg"
-			when "black"
-				# Obviously, we need to load this from the server
-				data["content"] = "Trevor thinks of _____ every night before going to bed."
-			else
-				throw "Nonexistant category error"
-		# switch
-		return new Card(data, options)
-	, # random
-	initialize: ->
-		Card.count += 1
-		@view = new CardView({"model": this})
-	, # initialize
-	move_to: (target) ->
-		@view.remove()
-		@view = new CardView({"model":this})
-		@view.render target
-	, # move_in
-	render: (container) ->
-		@view.render container
-	, # render
-	remove: ->
-		@view.remove()
-		@destroy({silent: true})
-	, # remove
-# Card
+# The event cannon sets up backbone events
+# origination, destination are strings designating cannon range
+# their values are, so far: local, global, galatic
+# local events don't travel up to the server
+# global events are echoed to everyone else in your room
+# galatic events are echoed to everyone everywhere in the galaxy
+# future support might allow for an array of socketid targets
 
-class Player extends Backbone.Model
-	initialize: (cards)->
-		@view = new PlayerView(model: this)
-		CardView.first_click = true
-		@view.render()
-		@cards = Cards.random({"category": "white", "limit": 10})
-		@cards.render(@view.container)
-	, # initialize
-	post_game_clean_up: ->
-		if @cards?
-			while @cards.length > 0
-				@cards.pop().remove()
-	, # post_game_clean_up
-# Player
-
-class Room extends Backbone.Model
-	@white_time: 15000 ,
-	state: "pre-game" ,
-	post_game_clean_up: ->
-		Flash.show "Cleaning after the game"
-		@black.remove() if @black?
-		if @whites?
-			while @whites.length > 0
-				@whites.pop().remove()
-		if @player?
-			@player.post_game_clean_up()
-	, # post_game_clean_up
-	initialize: ->
-		@view = new RoomView(model: this)
-		@view.render()
-		Backbone.Events.on "game:start", =>
-			Flash.show "game:start event received"
-			@black = Card.random({"category": "black"})
-			@black.render($(@view.el))
-			@whites = new Cards()
-			@player = new Player() # you
-			@white_timer = null
-			@state = "black-card"
-		Backbone.Events.on "card:white", (card) =>
-			switch @state
-				when "black-card"
-					unless @white_timer?
-						@white_timer = Timer.setTimeout(=>
-							@post_game_clean_up()
-							Backbone.Events.trigger "game:start"
-						, Room.white_time)
-						@state = "white-card"
-					@whites.add card
-					card.move_to($(@view.el))
-					card.in_play = true
-				when "white-card"
-					@whites.add card
-					card.move_to($(@view.el))
-					card.in_play = true
-			# switch
-	, # initialize
-# Room
-
-class Vote extends Backbone.Model
-# Vote
-
-class Cards extends Backbone.Collection
-	model: Card
-	@random: (options) ->
-		options = { category: "white", limit: 1 } unless options?
-		cards = new Cards()
-		for k in [1..options["limit"]]
-			card = Card.random(options)
-			cards.add card
-		return cards
-	, # @random
-	render: (container)->
-		@forEach (card) -> 
-			card.render(container)
-		# forEach
-	# render
-# Cards
-
-class Players extends Backbone.Collection
-	model: Player
-# Players
-
-# I guess we don't really use on the client side
-class Rooms extends Backbone.Collection
-	model: Room
-# Rooms
-
-class Votes extends Backbone.Collection
-	model: Vote
-# Votes
-
-class CardView extends Backbone.View
-	@first_click: true ,
-	tagName: "div", 
-	className: "card" ,
-	text: _.template( "<p class='card-contents'><%= content %></p>" ),
-	image: _.template( "<img src='<%= image %>' class='img-circle img-card' />" ),
-	parent: $("body") ,
-	has_image: false ,
-	events:
-		"click": "interact" ,
-		"mouseenter": "swap2img", 
-		"mouseleave": "swap2txt"
-	, # events
-	render: (container)->
-		unless @model?
-			throw "Calling View Without a Model Error"
-			return this
-		@parent = container if container?
-		@has_image = @model.has "image"
-		$(@el).append @text(@model.toJSON()) 
-		$(@el).attr "class", "card #{@model.get('category')}-card"
-		@parent.append $(@el)
-		if @has_image
-			$(@el).append @image(@model.toJSON())
-			@$("img").hide()
+socket.on "backbone event down", (eventname, data) ->
+	# We force events that come down from the server to be considered
+	# local, that way we don't end up in infinite communication loops
+	if data?
+		data = _.extend(data, {"local": true})
+	else
+		data = {"local": true}
+	Backbone.Events.trigger "#{eventname}", data
+# backbone event down
+Backbone.Events.on "all", (eventname)->
+	rest = (new Array).slice.call(arguments, 1)
+	if rest['local']
 		return false
-	, # render
-	interact: ->
-		if CardView.first_click
-			Backbone.Events.trigger( "card:white", @model ) unless @model.in_play
-			CardView.first_click = false
-		return false
-	, # interact
-	swap2txt: ->
-		if @has_image
-			@$("p").show()
-			@$("img").hide()
-		return false
-	, # swap2txt
-	swap2img: ->
-		if @has_image
-			@$("img").show()
-			@$("p").hide()
-		return false
-	, # swap2img
-	remove: ->
-		$(@el).hide()
-		$(@el).remove()
-	, # remove
-# CardView
-
-class Flash extends Backbone.View
-	@container: ( ->
-		$("body").append("<ul id='flash-container' class='flash-container'></ul>")
-		return $("#flash-container")
-	)() , # staticInitializer
-	@show: (content, color) ->
-		data = { 
-			content: content ,
-			color: if color then color else "info"
-		} # data
-		(new Flash()).render(data)
-	, # static show
-	tagName: "li" ,
-	className: "alert alert-block" ,
-	events: 
-		"mouseover .alert": "diffusify" ,
-		"mouseleave .alert": "focusify"
-	, # events
-	render: (data) ->
-		$(@el).attr "class", "#{@className} alert-#{data['color']}" if data['color']?
-		$(@el).html( data['content'] )
-		Flash.container.append $(@el)
-		setTimeout( ( (dom) -> 
-			return ( -> 
-				dom.$(dom.el).hide(1000)
-				dom.remove() 
-			) # return
-		)(this), 5000 ) # setTimeout
-		return this
-	, # render
-	diffusify: (e) ->
-		$(@el).css "opacity", 0.5
-	, # diffusify
-	focusify: (e) ->
-		$(@el).css "opacity", 1
-	, # focusify
-# Flash
-
-
-class Timer extends Backbone.View
-	@setTimeout: (callback, time) ->
-		setTimeout callback, time
-		timer = new Timer()
-		timer.render time
-		return timer
-	, # setTimeout
-	tagName: "div", 
-	className: "count-down-timer" ,
-	timeLeft: null ,
-	parent: $("body") ,
-	render: (time) ->
-		$(@el).html(time / 1000).appendTo @parent
-		@timeLeft = time
-		@countdown = setInterval( => 
-			if @timeLeft > 0
-				@timeLeft -= 1000
-				$(@el).html(@timeLeft / 1000)
-			else
-				clearInterval @countdown
-				$(@el).hide()
-				$(@el).remove()
-		, 1000 )
-	# render
-# Timer
-
-class PlayerView extends Backbone.View
-	tagName: "div", 
-	className: "player" ,
-	parent: $("body") ,
-	render: ->
-		$(@el).append(@template).appendTo @parent
-		@container = $(@el)
-	, # render
-# PlayerView
-
-class RoomView extends Backbone.View
-	tagName: "div", 
-	className: "room" ,
-	parent: $("body") ,
-	render: ->
-		@parent.append $(@el)
-	# render
-# RoomView
-
-
-# The game model drives the game and handles communication with the server
-# It fires all 4 events detailed in the game.coffee controller, and receives the following 4
-# socket only lives in here, backbone events fire everywhere though
-class Game extends Backbone.Router
-	routes: {
-		"room": "room_switch"
-	} , # routes	
-	# routes are actually game states
-	initialize: (@socket) ->
-		@room = new Room()
-		Backbone.Events.trigger "game:start"
-	, # initialize
-	room_switch: (name) ->
-		Flash.show "Switched to room #{name}", "success"
-		$("title").html "Faggot"
-	# room_switch
-# Game
-
-
-# Initialization
-socket = io.connect "http://localhost:3123"
-apples_to_assholes = new Game socket
+	socketid = socket.id or null
+	data = {
+		"socketid": socketid ,
+		"data": rest
+	} # data
+	socket.emit "backbone event up", data
+# all events 
