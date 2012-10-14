@@ -9,5 +9,16 @@ class Card extends Backbone.Model
 		# Image associated with the card
 		image: null
 	, # defaults
+	@random: (options)
+		options = options or { "category": "white", "amount" : 1 }
+		cards = []
+		for k in [1..options["amount"]]
+			cards.push(new Card({
+				"content": "Test Card" ,
+				"category": options["category"] ,
+				"image": "http://placehold.it/240x240"
+			}))	# cards push
+		return cards
+	, # random
 # Card
 

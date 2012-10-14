@@ -53,3 +53,9 @@
 	height: 120px;
 	margin-top: 20px;
 }
+.flash-container {
+	z-index: 999999;
+}
+.alert {
+	z-index: 999999;
+}

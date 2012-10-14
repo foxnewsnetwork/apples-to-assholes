@@ -51,10 +51,22 @@ class Room extends Backbone.Model
 	defaults:
 		state: "pre-game" ,
 		name: "default" ,
-		start_vote: -> throw "Not Implemented Error" ,
-		announce_winner: -> throw "Not Implemented Error" ,
-		pass_whites: -> throw "Not Implemented Error" ,
-		pass_blacks: -> throw "Not Implemented Error"
+		start_vote: -> 
+			
+			Backbone.Events.trigger "stuff"
+		, # start_vote
+		announce_winner: -> 
+			
+			Backbone.Events.trigger "stuff"
+		, # announce_winner
+		pass_whites: -> 
+			
+			Backbone.Events.trigger "stuff"
+		, # pass_whites
+		pass_blacks: -> 
+			
+			Backbone.Events.trigger "stuff"
+		, # pass_blacks
 	, # defaults
 	initialize: ->
 		@counter = 0
@@ -142,22 +154,8 @@ class Rooms extends Backbone.Collection
 			return @at position
 		else
 			@names[name] = @length
-			room = new Room(
-				"name": name ,
-				start_vote: (data)->
-					io.sockets.in(name).emit( "start vote down" , data)
-				, # start_vote
-				announce_winner: (data)->
-					io.sockets.in(name).emit( "winner down", data)
-				, # announce_winner
-				pass_whites: (data)->
-					io.sockets.in(name).emit( "white cards down", data)
-				, # pass_whites
-				pass_blacks: (data)->
-					io.sockets.in(name).emit( "black card down", data)
-				, # pass_blacks
-			) # room
-			@add( )
+			room = new Room("name": name)
+			@add room
 		# if-else
 	, # retrieve
 	model: Room
@@ -171,67 +169,43 @@ class Rooms extends Backbone.Collection
 # the naming convention:
 #all events emitted by the client and received by the server will end with up
 # all events emitted by the server down to the client will end with down
-
 # The 4 socket io events are as below
 io.sockets.on "connection", (socket) ->
 	# Confirms connection
 	socket.emit("connection down", socket.id)
 	
-	# join room up happens when a player joins a room; all visitors need to join a room.
-	# once joined, the server needs to let everyone else in the room know a new player has joined
-	socket.on "join room up", (data) ->
-		# data = 
-		# 	socketid : Integer ,
-		# 	roomid : String
-		# throw "Not Implemented"
-		room = Rooms.retrieve data['roomid']
-		player = room.join data
-		socket.join(data['roomid'])
-		socket.to(data['roomid']).emit "join room down", player
+	socket.on "join room up", (name) ->
+		socket.join(name)
+		io.sockets.in(name).emit "join room down", socket.id
 	# join room up
 
-	# white cards are response cards to a given prompt card.
-	# the server needs to let everyone else in the room know who put what white card up
-	# after the first card received after the server has sent down a black card starts a timer
-	# at the end of the timer, no more white cards can be submitted until a new round starts
-	socket.on "white card up", (data) ->
-		# data =
-		# 	socketid : Integer ,
-		# 	cardid : Integer ,
-		# 	roomid : String
-		# throw "Not Implemented"
-		
-		# Step 1: Null check - are we even in a room?
-		room = Rooms.retrieve data['roomid']
-		white_card = room.white_card data
-		socket.to(data['roomid']).emit "white card down", white_card if white_card?
+	socket.on "disconnect", ->
+		io.sockets.in(socket.room).emit "leave room down", socket.id
+	# disconnect
 
-	# white card up
+	socket.on "backbone event up", (data={}) ->
+		eventname = data['eventname']
+		content = _.extend(data, {"local":true})
+		Backbone.Events.trigger eventname, content
+	# backbone event up
 
-	# players vote after the white card submission timer ends.
-	# the first vote triggers a vote timer, and the winner of the voting wins all the white cards in play
-	# after the voting, the server starts a new game by sending down another black card
-	socket.on "vote up", (data) ->
-		# data =
-		# 	socketid : Integer ,
-		# 	cardid : Integer ,
-		# 	roomid : String
-		# throw "Not Implemented"
+	Backbone.Events.on "all", (eventname) ->
+		rest = Array.prototype.slice.call(arguments, 1)[0]
+		if rest["local"]
+			return
+		data = {
+			"socketid": socket.id ,
+			"eventname": eventname ,
+			"data": rest
+		} # data
+		if rest["global"]
+			socket.emit "backbone event down", data
+		else
+			io.sockets.in(rest["name"]).emit("backbone event down", data)
 
-		# Step 1: Get the room
-		room = Rooms.retrieve data['roomid']
-		vote = room.vote data
-		socket.to(data['roomid']).emit "vote down" , vote if vote?
-	# vote up
-
-	# occurs when a player leaves the room, the server must let everyone else know. 
-	# if he has white cards in play, they are destroyed
-	socket.on "leave room up", (data) ->
-		# data = 
-		# 	socketid : Integer ,
-		# 	roomid : String
-		room = Rooms.retrieve data['roomid']
-		player = room.leave data
-		socket.to(data['roomid']).emit "leave room down", player if player?
-	# leave room up
+###		console.log "++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++"
+		console.log "+	Backbone Event #{eventname} Up Detected!!!	+"
+		console.log "+	#{JSON.stringify(rest[0])}	+"
+		console.log "++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++"###
+	# all
 # io.sockets.on connection

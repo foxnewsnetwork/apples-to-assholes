@@ -7,10 +7,22 @@ class Room extends Backbone.Model
 	defaults:
 		state: "pre-game" ,
 		name: "default" ,
-		start_vote: -> throw "Not Implemented Error" ,
-		announce_winner: -> throw "Not Implemented Error" ,
-		pass_whites: -> throw "Not Implemented Error" ,
-		pass_blacks: -> throw "Not Implemented Error"
+		start_vote: -> 
+			
+			Backbone.Events.trigger "stuff"
+		, # start_vote
+		announce_winner: -> 
+			
+			Backbone.Events.trigger "stuff"
+		, # announce_winner
+		pass_whites: -> 
+			
+			Backbone.Events.trigger "stuff"
+		, # pass_whites
+		pass_blacks: -> 
+			
+			Backbone.Events.trigger "stuff"
+		, # pass_blacks
 	, # defaults
 	initialize: ->
 		@counter = 0

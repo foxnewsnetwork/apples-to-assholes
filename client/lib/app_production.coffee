@@ -302,11 +302,7 @@ class Game extends Backbone.Router
 	# routes are actually game states
 	initialize: (@socket) ->
 		@room = new Room()
-		alert @socket.id
 		Backbone.Events.trigger "game:start"
-		Backbone.Events.on "card:white", (card) =>
-			if @socket.id is card.get "socketid"
-				@socket.emit "white card up", card
 	, # initialize
 	room_switch: (name) ->
 		Flash.show "Switched to room #{name}", "success"
@@ -318,8 +314,13 @@ class Game extends Backbone.Router
 socket = io.connect "http://localhost:3123"
 socket.on "connection down", (socketid)->
 	socket.id = socketid
-	
 	apples_to_assholes = new Game socket
+	room_name = window.location.hash or "#apples-to-assholes" 
+	socket.emit "join room up", room_name
+	socket.on "join room down", (socketid) ->
+		Flash.show "#{socketid} has joined room #{room_name}", "warning"
+# connnection down
+
 
 
 # $.ajaxPrefilter (options, originalOptions, jqXHR) ->
@@ -442,13 +443,16 @@ socket.on "backbone event down", (eventname, data) ->
 	Backbone.Events.trigger "#{eventname}", data
 # backbone event down
 Backbone.Events.on "all", (eventname)->
-	rest = (new Array).slice.call(arguments, 1)
+	rest = Array.prototype.slice.call(arguments, 1)[0] or {}
+	###console.log JSON.stringify(rest)###
 	if rest['local']
 		return false
 	socketid = socket.id or null
 	data = {
 		"socketid": socketid ,
+		"eventname": eventname ,
 		"data": rest
 	} # data
+	###console.log JSON.stringify(data)###
 	socket.emit "backbone event up", data
 # all events 

@@ -11,7 +11,7 @@ TDIR=spec
 ODIR=lib
 DIR=src
  
-DEPS= $(patsubst %, $(DIR)/models/%.$(EXT), $(MODELS)) $(patsubst %, $(DIR)/collections/%.$(EXT), $(COLLECTIONS)) $(patsubst %, $(DIR)/routers/%.$(EXT), $(ROUTERS)) $(patsubst %, $(DIR)/misc/%.$(EXT), $(MISC)) $(patsubst %, $(DIR)/views/%.$(EXT), $(VIEWS))
+DEPS= $(DIR)/app.$(EXT) $(patsubst %, $(DIR)/models/%.$(EXT), $(MODELS)) $(patsubst %, $(DIR)/collections/%.$(EXT), $(COLLECTIONS)) $(patsubst %, $(DIR)/routers/%.$(EXT), $(ROUTERS)) $(patsubst %, $(DIR)/misc/%.$(EXT), $(MISC)) $(patsubst %, $(DIR)/views/%.$(EXT), $(VIEWS))
 TDEPS= $(patsubst %, $(TDIR)/models/%$(TEXT).$(EXT), $(MODELS)) $(patsubst %, $(TDIR)/collections/%$(TEXT).$(EXT), $(COLLECTIONS)) $(patsubst %, $(TDIR)/routers/%$(TEXT).$(EXT), $(ROUTERS)) $(patsubst %, $(TDIR)/misc/%$(TEXT).$(EXT), $(MISC))
 
 .PHONY: development production test

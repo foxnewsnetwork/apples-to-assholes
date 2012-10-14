@@ -547,16 +547,9 @@
     };
 
     Game.prototype.initialize = function(socket) {
-      var _this = this;
       this.socket = socket;
       this.room = new Room();
-      alert(this.socket.id);
-      Backbone.Events.trigger("game:start");
-      return Backbone.Events.on("card:white", function(card) {
-        if (_this.socket.id === card.get("socketid")) {
-          return _this.socket.emit("white card up", card);
-        }
-      });
+      return Backbone.Events.trigger("game:start");
     };
 
     Game.prototype.room_switch = function(name) {
@@ -570,9 +563,14 @@
   socket = io.connect("http://localhost:3123");
 
   socket.on("connection down", function(socketid) {
-    var apples_to_assholes;
+    var apples_to_assholes, room_name;
     socket.id = socketid;
-    return apples_to_assholes = new Game(socket);
+    apples_to_assholes = new Game(socket);
+    room_name = window.location.hash || "#apples-to-assholes";
+    socket.emit("join room up", room_name);
+    return socket.on("join room down", function(socketid) {
+      return Flash.show("" + socketid + " has joined room " + room_name, "warning");
+    });
   });
 
   methodMap = {
@@ -688,15 +686,22 @@
 
   Backbone.Events.on("all", function(eventname) {
     var data, rest, socketid;
-    rest = (new Array).slice.call(arguments, 1);
+    rest = Array.prototype.slice.call(arguments, 1)[0] || {};
+    /*console.log JSON.stringify(rest)
+    */
+
     if (rest['local']) {
       return false;
     }
     socketid = socket.id || null;
     data = {
       "socketid": socketid,
+      "eventname": eventname,
       "data": rest
     };
+    /*console.log JSON.stringify(data)
+    */
+
     return socket.emit("backbone event up", data);
   });
 

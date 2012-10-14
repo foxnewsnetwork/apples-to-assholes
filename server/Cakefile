@@ -2,23 +2,23 @@ fs = require 'fs'
 {exec} = require 'child_process'
 
 appFiles = [
-	"app" ,
-	"models/model" ,
+	"initializer" ,
+	"routers/game_server" ,
 	"models/card" ,
+	"models/channel" ,
 	"collections/cards" ,
-	"models/room" ,
-	"collections/rooms" ,
-	"controllers/game"
+	"collections/channels" ,
+	"app"
 ]
 
 testFiles = [
 	"runner" ,
-	"collections/cards"
-	"models/room" ,
-	"collections/rooms" ,
+	"models/channel" ,
+	"collections/cards" ,
+	"collections/channels" ,
 ]
 
-outputDir = "."
+outputDir = "lib"
 inputDir = "src"
 specDir = "spec"
 

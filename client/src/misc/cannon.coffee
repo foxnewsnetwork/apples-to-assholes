@@ -16,13 +16,16 @@ socket.on "backbone event down", (eventname, data) ->
 	Backbone.Events.trigger "#{eventname}", data
 # backbone event down
 Backbone.Events.on "all", (eventname)->
-	rest = (new Array).slice.call(arguments, 1)
+	rest = Array.prototype.slice.call(arguments, 1)[0] or {}
+	###console.log JSON.stringify(rest)###
 	if rest['local']
 		return false
 	socketid = socket.id or null
 	data = {
 		"socketid": socketid ,
+		"eventname": eventname ,
 		"data": rest
 	} # data
+	###console.log JSON.stringify(data)###
 	socket.emit "backbone event up", data
 # all events 

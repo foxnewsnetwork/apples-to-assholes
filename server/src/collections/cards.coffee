@@ -2,6 +2,12 @@
 # We should initialize a a bunch of cards for room
 class Cards extends Backbone.Collection
 	model: Card,
+	initialize: (@color) ->
+
+	, # initialize
+	random: (amount = 1) ->
+		return Card.random({ "category": @color, "amount": amount })
+	, # random
 	@retrieve: (options) ->
 		# options = { category : "black/white", limit : n }
 		# returns count number of cards of category category
